@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgis/postgis:15-3.3
+    container_name: postgis_fuel_db
+    environment:
+      POSTGRES_DB: trucker_router
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: securepassword
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d fuel_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis_cache
+    ports:
+      - "6379:6379"
+    restart: always
+
+  web:
+    build: .
+    container_name: django_fuel_api
+    command: gunicorn -c gunicorn.conf.py fuel_project.asgi:application
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    
+    env_file:
+      - .env
+    # environment:
+    #   - DATABASE_URL=postgres://postgres:securepassword@db:5432/fuel_db
+    #   - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: always
+
+volumes:
+  pgdata:
