@@ -25,7 +25,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--cities-file",
             type=str,
-            default=str(BASE_DIR / "datasets" / "us_cities_2.csv"),
+            default=str(BASE_DIR / "datasets" / "us_cities_2.csv"), # 
             help="Path to the US cities reference CSV file.",
         )
         parser.add_argument(
@@ -130,114 +130,6 @@ class Command(BaseCommand):
             )
         )
         return df
-
-    # def _enrich_fuel_data(
-    #     self, fuel_path: str, df_cities: pd.DataFrame, output_path: str
-    # ) -> pd.DataFrame:
-    #     """Loads fuel prices, filters U.S. records, deduplicates stations, and merges coordinates."""
-    #     if not Path(fuel_path).exists():
-    #         raise CommandError(f"Critical Error: Fuel file missing at {fuel_path}")
-
-    #     self.stdout.write(
-    #         self.style.NOTICE(f"Processing fuel prices from {fuel_path}...")
-    #     )
-    #     df_fuel = pd.read_csv(fuel_path)
-
-    #     required_fuel_cols = {
-    #         "OPIS Truckstop ID",
-    #         "Truckstop Name",
-    #         "Address",
-    #         "City",
-    #         "State",
-    #         "Rack ID",
-    #         "Retail Price",
-    #     }
-    #     if not required_fuel_cols.issubset(df_fuel.columns):
-    #         raise CommandError(
-    #             f"Fuel CSV is missing required columns. Found: {list(df_fuel.columns)}"
-    #         )
-
-    #     # Rename columns inplace
-    #     df_fuel.rename(columns={
-    #         "OPIS Truckstop ID": "opis_truckstop_id",
-    #         "Truckstop Name": "truckstop_name",
-    #         "Address": "address",
-    #         "City": "city",
-    #         "State": "state",
-    #         "Rack ID": "rack_id",
-    #         "Retail Price": "retail_price"
-    #     }, inplace=True)
-
-    #     # Clean String Fields
-    #     df_fuel["city_clean"] = df_fuel["city"].astype(str).str.strip().str.title()
-    #     df_fuel["state_clean"] = df_fuel["state"].astype(str).str.strip().str.upper()
-
-    #     # Filter Out Canadian / Non-U.S. States
-    #     # Extract set of valid 2-letter U.S. state codes present in cities reference dataset
-    #     valid_us_states = set(df_cities["state_clean"].unique())
-    #     initial_count = len(df_fuel)
-    #     df_fuel = df_fuel[df_fuel["state_clean"].isin(valid_us_states)].copy()
-    #     filtered_canada_count = initial_count - len(df_fuel)
-
-    #     # Deduplicate Truck Stops
-    #     # Deduplicate by OPIS Truckstop ID, keeping the row with the lowest retail price
-    #     df_fuel["retail_price"] = pd.to_numeric(df_fuel["retail_price"], errors="coerce")
-    #     df_fuel = df_fuel.sort_values(by=["opis_truckstop_id", "retail_price"]).drop_duplicates(
-    #         subset=["opis_truckstop_id"], keep="first"
-    #     )
-    #     deduped_count = len(df_fuel)
-
-    #     # Compute state centroids for fallback mapping
-    #     state_centroids = (
-    #         df_cities.groupby("state_clean")[["longitude", "latitude"]]
-    #         .mean()
-    #         .to_dict(orient="index")
-    #     )
-
-    #     # Merge with US Cities Coordinates
-    #     df_merged = pd.merge(
-    #         df_fuel,
-    #         df_cities[["city_clean", "state_clean", "latitude", "longitude"]],
-    #         on=["city_clean", "state_clean"],
-    #         how="left",
-    #     )
-
-    #     # Fallback assignment for any remaining unmapped rows
-    #     # 1. State Centroid Fallback for cities not found in USCity table
-    #     missing_coords = df_merged["latitude"].isna() | df_merged["longitude"].isna()
-    #     if missing_coords.any():
-    #         # Map state centroids directly using state_clean
-    #         state_lat_map = df_cities.groupby("state_clean")["latitude"].mean().to_dict()
-    #         state_lon_map = df_cities.groupby("state_clean")["longitude"].mean().to_dict()
-
-    #         df_merged["latitude"] = df_merged["latitude"].fillna(
-    #             df_merged["state_clean"].map(state_lat_map)
-    #         )
-    #         df_merged["longitude"] = df_merged["longitude"].fillna(
-    #             df_merged["state_clean"].map(state_lon_map)
-    #         )
-
-    #     # 2. Drop any remaining rows without valid geographic coordinates (Guarantees Data Quality)
-    #     invalid_rows = df_merged["latitude"].isna() | df_merged["longitude"].isna()
-    #     if invalid_rows.any():
-    #         dropped_count = invalid_rows.sum()
-    #         df_merged = df_merged[~invalid_rows].copy()
-    #         self.stdout.write(
-    #             self.style.WARNING(
-    #                 f"Dropped {dropped_count} fuel stop(s) due to unresolvable geographic location."
-    #             )
-    #         )
-
-    #     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-    #     df_merged.to_csv(output_path, index=False)
-        
-    #     self.stdout.write(
-    #         self.style.SUCCESS(
-    #             f"Fuel Dataset Prepared: Excluded {filtered_canada_count} Canadian/non-US rows. "
-    #             f"Deduplicated down to {deduped_count} unique U.S. truck stops."
-    #         )
-    #     )
-    #     return df_merged
 
     def _enrich_fuel_data(
         self, fuel_path: str, df_cities: pd.DataFrame, output_path: str
