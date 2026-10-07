@@ -25,7 +25,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--cities-file",
             type=str,
-            default=str(BASE_DIR / "datasets" / "us_cities_2.csv"), # 
+            default=str(BASE_DIR / "datasets" / "us_cities_2.csv"), # https://raw.githubusercontent.com/kelvins/US-Cities-Database/main/csv/us_cities.csv
             help="Path to the US cities reference CSV file.",
         )
         parser.add_argument(
