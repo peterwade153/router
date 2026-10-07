@@ -28,9 +28,12 @@ ENV C_INCLUDE_PATH=/usr/include/gdal
 COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy project files and entrypoint script into the container
+# Copy project files into the container
 COPY . /app/
-RUN chmod +x /app/entrypoint.sh
+
+# Add entrypoint script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 # Expose Django's port
 EXPOSE 8000
@@ -39,4 +42,4 @@ EXPOSE 8000
 ENTRYPOINT ["/entrypoint.sh"]
 
 # Default command passed to the entrypoint script
-CMD ["gunicorn", "-c", "gunicorn.conf.py", "fuel_project.asgi:application"]
+CMD ["gunicorn", "-c", "gunicorn.conf.py", "backend.asgi:application"]

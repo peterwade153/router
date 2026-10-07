@@ -6,6 +6,7 @@ charset-normalizer==3.5.2
 click==8.5.0
 Django==6.1.1
 djangorestframework==3.18.1
+geopy==2.5.0
 gunicorn==26.2.0
 h11==0.16.0
 httptools==0.8.0

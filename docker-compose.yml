@@ -13,7 +13,7 @@ services:
     ports:
       - "5433:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d fuel_db"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d trucker_router"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -28,7 +28,7 @@ services:
   web:
     build: .
     container_name: django_fuel_api
-    command: gunicorn -c gunicorn.conf.py fuel_project.asgi:application
+    command: gunicorn -c gunicorn.conf.py backend.wsgi:application
     volumes:
       - .:/app
     ports:
