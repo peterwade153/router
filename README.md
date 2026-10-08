@@ -24,3 +24,18 @@ Prerequsites, Docker installation
     ```text
     http://127.0.0.1:8000/
     ```
+
+5. Sample Payloads
+
+   ```json
+      {
+         "origin": {
+            "city": "Houston",
+            "state": "TX"
+         },
+         "destination": {
+            "city": "Chicago",
+            "state": "IL"
+         }
+      }
+   ```

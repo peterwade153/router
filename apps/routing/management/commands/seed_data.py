@@ -64,7 +64,7 @@ class Command(BaseCommand):
                 # Step 2: Enrich Fuel Stops & Build Audit File
                 df_enriched = self._enrich_fuel_data(fuel_path, df_cities, output_path)
 
-                # Step 3: Seed Truck Stops into PostGIS
+                # Step 3: Seed Truck Stops
                 self._seed_truck_stops(df_enriched, batch_size)
 
                 self.stdout.write(
@@ -101,7 +101,6 @@ class Command(BaseCommand):
             "LONGITUDE": "longitude",
         }, inplace=True)
 
-        # Vectorized list comprehension via zip (bypasses slow iterrows)
         cities_to_create = [
             USCity(
                 city=c,
