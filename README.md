@@ -9,14 +9,14 @@ Python3, Django, Postgis, Redis, Docker
 
 Prerequsites, Docker installation
 
-1. Create and activate a virtual environment and Clone the project `https://github.com/peterwade153/router.git`
+1. Clone the project `https://github.com/peterwade153/router.git`
 
 2. Move into the project folder
    ```
     cd router
    ```
 
-3. Create a `.env` file from the `.env.sample` file.
+3. Create a `.env` file in the current directory, from the `.env.sample` file.
 
 4. Start Docker and run command below
     ```bash
