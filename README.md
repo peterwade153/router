@@ -1,5 +1,9 @@
-# router
+# Truck Route Planner
 Truck route planner, with truck fuel stops with least fuel price per gallon
+
+### Tech
+
+Python3, Django, Postgis, Redis, Docker
 
 ### Installation
 
@@ -68,6 +72,8 @@ Prerequsites, Docker installation
 
 5. Seeding Data for US cities and Truck stop
 
+   - Ignores data points outside the US, and drop duplicates, keeping those with least price per gallon
+
    ```bash
       docker compose exec web python manage.py seed_data 
    ```
@@ -77,3 +83,15 @@ Prerequsites, Docker installation
    ```bash
       docker compose exec web python manage.py test 
    ```
+
+7. Intergrations
+
+   To Route between Cities, the APIs below are used.
+
+   Incase the City Coordinates don't exist in the database
+
+      - Nominatim API to fetch coordinates for City, County, State
+
+   Routing between coordinates
+
+      - OSRM (Open Source Routing Machine) API
