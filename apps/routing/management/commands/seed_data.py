@@ -16,9 +16,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
 
 class Command(BaseCommand):
     help = (
-        "High-performance production command to seed US Cities reference table, "
-        "infer missing fuel stop coordinates via vectorized mapping, and batch-insert "
-        "into PostGIS."
+        "Command to seed US Cities, and Truck Stop tables"
+        "infer missing fuel stop coordinates from their Cities in the US Cities table"
     )
 
     def add_arguments(self, parser) -> None:
@@ -290,7 +289,7 @@ class Command(BaseCommand):
         return df_merged
 
     def _seed_truck_stops(self, df_enriched: pd.DataFrame, batch_size: int) -> None:
-        """Parses geographic points and bulk creates TruckStop records using fast zip iteration."""
+        """Parses geographic points and bulk creates TruckStop records."""
         self.stdout.write(
             self.style.NOTICE("Seeding TruckStop table into PostGIS...")
         )
