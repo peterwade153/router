@@ -1,11 +1,15 @@
-# router
+# Truck Route Planner
 Truck route planner, with truck fuel stops with least fuel price per gallon
+
+### Tech
+
+Python3, Django, Postgis, Redis, Docker
 
 ### Installation
 
 Prerequsites, Docker installation
 
-1. Create and activate a virtual environment and Clone the project `https://github.com/peterwade153/concierge.git`
+1. Create and activate a virtual environment and Clone the project `https://github.com/peterwade153/router.git`
 
 2. Move into the project folder
    ```
@@ -25,7 +29,8 @@ Prerequsites, Docker installation
     http://127.0.0.1:8000/
     ```
 
-5. Sample Payloads
+ Test in Postman with the Sample Payloads.
+   - State is mandatory. For Optimal Routing, include the City and County.
 
    ```json
       {
@@ -39,3 +44,54 @@ Prerequsites, Docker installation
          }
       }
    ```
+   ```json
+      {
+         "origin": {
+            "state": "PA"
+         },
+         "destination": {
+            "city": "Chicago",
+            "state": "IL"
+         }
+      }
+   ```
+   ```json
+      {
+         "origin": {
+            "city": "Jackson",
+            "county": "Teton",
+            "state": "WY"
+         },
+         "destination": {
+            "city": "Houston",
+            "county": "Harris County",
+            "state": "TX"
+         }
+      }
+   ```
+
+5. Seeding Data for US cities and Truck stop
+
+   - Ignores data points outside the US, and drop duplicates, keeping those with least price per gallon
+
+   ```bash
+      docker compose exec web python manage.py seed_data 
+   ```
+
+6. Run test
+
+   ```bash
+      docker compose exec web python manage.py test 
+   ```
+
+7. Intergrations
+
+   To Route between Cities, the APIs below are used.
+
+   Incase the City Coordinates don't exist in the database
+
+      - Nominatim API to fetch coordinates for City, County, State
+
+   Routing between coordinates
+
+      - OSRM (Open Source Routing Machine) API
