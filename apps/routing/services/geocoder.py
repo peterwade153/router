@@ -1,11 +1,12 @@
 import logging
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Tuple
 
 from django.contrib.gis.db.models.functions import Centroid
 from django.contrib.gis.geos import Point
+from django.contrib.gis.db.models import Collect
 from django.db import IntegrityError, transaction
-from django.core.cache import cache
 from django.db.models import Q
+from django.core.cache import cache
 from geopy.extra.rate_limiter import RateLimiter
 from geopy.geocoders import Nominatim
 
@@ -85,19 +86,19 @@ class NominatimService:
         return None
 
 
-def _get_state_centroid(state_queryset, norm_state: str) -> Optional[Dict[str, Any]]:
+def _get_state_centroid(state_queryset, norm_state: str) -> Optional[Tuple[float, float]]:
     """Calculates or retrieves from cache the PostGIS centroid for a given state."""
     cache_key = f"state_centroid_{norm_state}".lower()
     cached_coords = cache.get(cache_key)
     if cached_coords:
         return cached_coords
 
-    centroid_result = state_queryset.aggregate(centroid=Centroid("point"))
-    centroid_point = centroid_result.get("centroid")
+    result = state_queryset.aggregate(centroid=Centroid(Collect("point")))
+    centroid_point = result.get("centroid")
 
     if centroid_point:
         coords = (centroid_point.x, centroid_point.y)
-        cache.set(cache_key, coords, timeout=86400 * 7)  # Cache for 7 days
+        cache.set(cache_key, coords, timeout=86400 * 30)  # 30 days
         return coords
     return None
 
@@ -118,21 +119,19 @@ def resolve_location_to_coords(
     if not state:
         return None
 
-    state_filter = Q(state__iexact=state.strip()) | Q(state_name__iexact=state.strip())
+    state_filter = Q(state__iexact=state) | Q(state_name__iexact=state)
     state_record = USCity.objects.filter(state_filter).values("state").first()
-    norm_state = state_record["state"] if state_record else state.strip().upper()
+    norm_state = state_record["state"] if state_record else state.upper()
 
     base_queryset = USCity.objects.filter(state_filter)
-
     if county:
-        base_queryset = base_queryset.filter(county__iexact=county.strip())
+        base_queryset = base_queryset.filter(county__iexact=county)
 
     # -------------------------------------------------------------------
     # US CITY LOOKUP
     # -------------------------------------------------------------------
     if city:
-        city_clean = city.strip()
-        matches = list(base_queryset.filter(city__iexact=city_clean))
+        matches = list(base_queryset.filter(city__iexact=city))
 
         if len(matches) == 1 and matches[0].point:
             match = matches[0]
@@ -149,7 +148,7 @@ def resolve_location_to_coords(
             counties: List[str] = sorted(list({m.county for m in matches if m.county}))
             return {
                 "coordinates": None,
-                "city": city_clean,
+                "city": city,
                 "county": None,
                 "state": matches[0].state,
                 "ambiguous_counties": counties,
@@ -158,10 +157,10 @@ def resolve_location_to_coords(
         # NOMINATIM FALLBACK LOOKUP
         # ---------------------------------------------------------------
         logger.info(
-            f"DB lookup missed for '{city_clean}, {state}'. Falling back to Nominatim geocoder..."
+            f"DB lookup missed for '{city}, {state}'. Falling back to Nominatim geocoder..."
         )
         geocoder = get_geocoding_service()
-        result = geocoder.geocode_location(city=city_clean, state=state)
+        result = geocoder.geocode_location(city=city, state=state)
 
         if result:
             lat = result["lat"]
@@ -169,34 +168,32 @@ def resolve_location_to_coords(
             raw_address = result["raw_address"]
             point = Point(float(lon), float(lat), srid=4326)
 
-            state_name = raw_address.get("state")
             state_code = raw_address.get("state_code", "").upper() or norm_state
-            extracted_county = raw_address.get("county") or county
+            state_name = raw_address.get("state") or state_code
+            extracted_county = raw_address.get("county") or county or ""
 
-            # Safely create or update DB record to eliminate race conditions
             try:
                 with transaction.atomic():
-                    city_obj, created = USCity.objects.get_or_create(
-                        city__iexact=city_clean,
+                    _, _ = USCity.objects.get_or_create(
+                        city__iexact=city,
                         state__iexact=state_code,
+                        county__iexact=extracted_county,
                         defaults={
-                            "city": city_clean.title(),
+                            "city": city.title(),
                             "state": state_code,
                             "state_name": state_name,
                             "county": extracted_county,
-                            "latitude": lat,
-                            "longitude": lon,
                             "point": point,
                         },
                     )
             except IntegrityError as e:
                 logger.warning(
-                    f"Concurrency conflict while saving geocoded city '{city_clean}, {state_code}': {e}"
+                    f"Concurrency conflict while saving geocoded city '{city}, {state_code}': {e}"
                 )
 
             return {
                 "coordinates": (float(lon), float(lat)),
-                "city": city_clean.title(),
+                "city": city.title(),
                 "county": extracted_county,
                 "state": state_code,
                 "ambiguous_counties": None,
